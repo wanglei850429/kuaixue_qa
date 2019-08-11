@@ -1,6 +1,7 @@
 import gensim
 import jieba
 import os
+import conf.config
 
 class Utils():
     user_dict_modify_time=None
@@ -14,7 +15,9 @@ class Utils():
         return model
 
     @classmethod
-    def get_stop_words(cls,file='../data/stopwords.txt', encoding='utf-8'):
+    def get_stop_words(cls):
+        file = conf.config.STOP_WORDS
+        encoding = 'utf-8'
         if cls.stop_word_modify_time != os.path.getmtime(file):
             cls.stop_word_modify_time = os.path.getmtime(file)
             cls.stopwords=[]
@@ -26,7 +29,9 @@ class Utils():
             return cls.stopwords
 
     @classmethod
-    def load_user_words(cls,file='../data/userwords.txt', encoding='utf-8'):
+    def load_user_words(cls):
+        file=conf.config.USER_WORDS
+        encoding = 'utf-8'
         if cls.user_dict_modify_time != os.path.getmtime(file):
             jieba.load_userdict(file)
             cls.user_dict_modify_time = os.path.getmtime(file)

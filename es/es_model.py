@@ -3,8 +3,6 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 import re
 
-DEBUG = False
-
 class ES_Model():
     def __init__(self, input_file, index_name, stop_words_file, index, model_name='es'):
         self.input_file = input_file
@@ -32,6 +30,38 @@ class ES_Model():
     #创建表 
     def set_mapping(self, es):
         my_mapping = {
+            'settings':{
+                'number_of_shards': 1,
+                'number_of_replicas': 0,
+                # 'analysis':{
+                #     'filter':{
+                #         'my_syno_filter':{
+                #             'type':'synonym',
+                #             'synonyms_path':'analysis/synonyms.txt'
+                #         }
+                #     },
+                #     'char_filter':{
+                #         'my_char_filter':{
+                #             'type':'mapping',
+                #             'mappings' : ['| => |']
+                #         }
+                #     },
+                #     'analyzer':{
+                #         'ik_syno_smart':{
+                #             'type':'custom',
+                #             'tokenizer':'ik_smart',
+                #             'filter': ['my_syno_filter'],
+                #             'char_filter' : ['my_char_filter']
+                #         },
+                #         'ik_syno_max_word': {
+                #             'type': 'custom',
+                #             'tokenizer': 'ik_max_word',
+                #             'filter': ['my_syno_filter'],
+                #             'char_filter': ['my_char_filter']
+                #         }
+                #     }
+                # }
+            },
             'mappings': {
                 'properties': {
                     'question_id': {
@@ -83,6 +113,10 @@ class ES_Model():
                     es, ACTIONS, index=self.index_name, raise_on_error=True,request_timeout=100)
             print("Performed %d actions" % success)
 
+    def insert_data(self,id,question,answer):
+        data = {'question_id':id,'question':question,'answer':answer,'question_seg':' '.join(jieba.lcut(question))}
+        self.es.index(self.index_name,body=data)
+
     @staticmethod
     def split_word(query, stopwords):
         words = jieba.cut(query)
@@ -90,22 +124,11 @@ class ES_Model():
         return result
 
 
-    def get_topn_sims_q(self, sentences, id, n=20):
+    def get_topn_sims_q(self, sentences, n=50):
         # split_sent = self.split_word(sentences, self.stopwords)
         split_sent = sentences
         results_1 = {'title': sentences, 'split_title': split_sent}
-        pattern = re.compile(r'\d{6}')
-        if pattern.match(id):
-            query = {'query':
-                {'bool':
-                    {'should': [
-                        {'match': {'question_id': id}},
-                        {'match': {'question': split_sent}}
-                    ]}
-                }
-            }
-        else:
-            query = {'query': {'match': {'question': split_sent}}}
+        query = {'query': {'match': {'question': split_sent}},'size':n}
         allDoc = self.es.search(index=self.index_name, body=query)
         results_2 = {}
         items = allDoc['hits']['hits']
@@ -114,7 +137,8 @@ class ES_Model():
         for i in range(iter_num):
             each_results_2 = {'index': str(items[i]['_source']['question_id']),
                               'similarity': str(items[i]['_score']),
-                              'title': items[i]['_source']['question']}
+                              'title': items[i]['_source']['question'],
+                              'answer':items[i]['_source']['anwser']}
             results_2[i] = each_results_2
         results = {'result1': results_1, 'result2': results_2}
         return results

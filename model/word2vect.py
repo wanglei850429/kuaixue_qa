@@ -1,5 +1,6 @@
 from gensim.models.word2vec import LineSentence, Word2Vec
 import jieba
+import jieba.posseg as psg
 from scipy.linalg import norm
 import gensim
 import numpy as np
@@ -42,7 +43,7 @@ def save_model(input, output):
     #print(model.wv.vocab)
     
 def generate_model(file, stop_words_file, model_file):
-    stopwords = Utils.get_stop_words(stop_words_file,'utf-8')
+    stopwords = Utils.get_stop_words()
     #preprocess_gen_1(file, OUTFILE1)
     preprocess_gen_2(OUTFILE1, OUTFILE2, stopwords, 1000000)
     save_model(OUTFILE2, model_file)
@@ -53,11 +54,15 @@ def load_model(model_file):
 
 def vector_similarity(s1, s2, model):
     # 取停顿词
-    stopwords = Utils.get_stop_words(stop_words_file, 'utf-8')
+    stopwords = Utils.get_stop_words()
     def sentence_vector(s):
         #words = jieba.lcut(s)
         Utils.load_user_words()
-        words = [x for x in jieba.cut(s, cut_all=False) if x not in stopwords]
+        #
+        #只保留句子中动词，名词词性的词用来计算余弦相似度
+        words = [w for w,t in psg.cut(s) if t in ['ng','n','nr','ns','nt','nz','v','vg','vd','vn']]
+        if len(words)==0:
+            words = [x for x in jieba.cut(s, cut_all=False) if x not in stopwords]
         words = list(filter(lambda x:not x.isdigit(),words))
         words = [word.lower().strip() for word in words]
         v = np.zeros(64)
@@ -68,7 +73,10 @@ def vector_similarity(s1, s2, model):
             else:
                 #print(v)
                 v += model[word]
-        v /= len(words)
+        if len(words) == 0:
+            v = 0
+        else:
+            v /= len(words)
         return v
     
     v1, v2 = sentence_vector(s1), sentence_vector(s2)

@@ -36,16 +36,23 @@ def updateUserWord():
     resp.response = userwords
     return resp
 
+# 跨域支持
+def after_request(resp):
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Access-Control-Allow-Methods'] = '*'
+    return resp
+
 if __name__ == '__main__':
+    app.after_request(after_request)
     api = Api(app)
     api.add_resource(Questions, '/QA/q/<question>')
     api.add_resource(Answer, '/QA/a/<question>/<id>')
     api.add_resource(UserWords, '/QA/user_word/<word>')
     api.add_resource(StopWords, '/QA/stop_word/<word>')
-    api.add_resource(QuestionsAndAnswers, '/QA/add/<id>/<question>/<answer>')
+    api.add_resource(QuestionsAndAnswers, '/QA/add/<question>/<answer>')
 
     parser = reqparse.RequestParser()
     parser.add_argument('arg', type=str)
-    
+
     app.config.update(RESTFUL_JSON=dict(ensure_ascii=False))
     app.run(debug=True)

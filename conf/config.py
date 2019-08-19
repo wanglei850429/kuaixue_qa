@@ -1,6 +1,6 @@
 DEBUG = False
-ES_HOST='127.0.0.1'
-ES_PORT='9200'
+ES_HOST='192.168.99.100'
+ES_PORT=9200
 VEC_MODE='WORD2VEC'
 STOP_WORDS='../data/stopwords.txt'
 USER_WORDS='../data/userwords.txt'

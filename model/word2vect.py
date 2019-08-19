@@ -2,6 +2,7 @@ from gensim.models.word2vec import LineSentence, Word2Vec
 import jieba
 import jieba.posseg as psg
 from scipy.linalg import norm
+import scipy
 import gensim
 import numpy as np
 
@@ -80,5 +81,9 @@ def vector_similarity(s1, s2, model):
         return v
     
     v1, v2 = sentence_vector(s1), sentence_vector(s2)
+    if type(v1) != type(v2):return 0
     #余弦相似度(Cosine Similarity)
-    return np.dot(v1, v2) / (norm(v1) * norm(v2))
+    sim = np.dot(v1, v2) / (norm(v1) * norm(v2))
+    if scipy.isnan(sim):
+        return 0
+    return sim
